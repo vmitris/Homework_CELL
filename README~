@@ -1,0 +1,110 @@
+Mitris Victor
+334 CC
+TEMA 3 ASC
+
+Detalii de implementare:
+
+Pentru compilare se intra in folderul ppu, se executa make care creaza executabilul tema3
+
+Am folosit structurile primite, precum si o parte din functile de citire si scriere in fisiere. Am schimbat in schimb functia _alloc
+adaugand malloc_align in locul malloc pentru a alinia memoria la 16. 
+
+PPU-ul imparte imaginea primita in linii bloc. O linie bloc contine 
+8 linii normale din imagine. Numarul de linii bloc pentru fiecare SPU este calculat astfel image.height / ( BLOC * num_spus) unde BLOC 
+este 8. Ultimul SPU va avea un numar diferit de linii bloc asignate in cazul in care height nu se imparte la 64. Stim ca height se 
+imparte la 8 sigur, fiind multiplu de 16.
+
+Structura folosita pentru comunicarea cu spu contine:
+-"point" reprezinta pointer la partea din imaginea de intrare
+-"output" reprezinta pointer la partea din imaginea de iesire dupa decompresie
+-"blocuri" reprezinta pointer la structura block de unde incepe fiecare spu procesarea
+-"dim" reprezinta numarul de linii bloc pentru fiecare spu
+
+PPU asteapta terminarea thread-urilor, creaza imaginile comprimate si imaginea de output si afiseaza timpii de rulare.
+
+SPU:
+
+-primeste structura de la PPU prin mfc_get simplu
+-ia din campul point al structurii o linie bloc intreaga folosind Liste DMA. Pentru imagini mari, aceasta linie bloc depasea 16k asa ca 
+a trebuit folosit un mecanism prin care sa primim o dimensiune mai mare. Folosind codul din laborator, aliniind lista la 16 am creat 
+functiile large_transfer si large_transfer2, diferenta dintre ele fiind ca prima executa mfc_getl si a doua mfc_putl.
+-se ia fiecare bloc si se executa pe acesta operatiile specifice cell-ului pentru calculul mean si deviatie.
+-Problema intalnita a fost la inmultirea vectorilor, operatie folosita in calculul deviatiei
+-Nu am reusit extinderea de la 2 la 4 byte's pentru vectori asa ca am fost nevoit sa fac inmultirea normal
+-se calculeaza bitplane-ul pentru fiecare bloc
+-se trimite inapoi in memoria PPU-ului tot folosind Liste DMA
+-decompresia se face in acelasi pas in spu, fiind calculate deja bitplane-urile, a si b pentru o lista de blocks.
+- a la mine se numeste "as" pentru ca numele de "a" il folosisem in transferul pixelilor din imagine
+
+Timpi de executie:
+
+Pentru varianta seriala primita timpii au fost:
+Imaginea in1.pgm
+	E/D: 1.215526 s
+	Total: 1.773706
+
+Imaginea in2.pgm
+	E/D: 2.365488
+	Total: 3.281073
+
+Imaginea in3.pgm
+	E/D: 3.22005
+	Total: 4.173148
+
+Pentru varianta paralela:
+Folosind 1 SPU:
+Imaginea in1.pgm :	-Total time: 0.941898
+					-E/D time: 0.546276
+
+Imaginea in2.pgm :	-Total time: 1.794664
+					-E/D time: 1.112178
+
+Imaginea in3.pgm :	-Total time: 2.462137
+					-E/D time: 1.541288
+
+
+
+Folosind 2 SPU:
+Imaginea in1.pgm :	-Total time: 0.649200
+					-E/D time: 0.273890
+
+Imaginea in2.pgm :	-Total time: 1.147989
+					-E/D time: 0.551539
+
+Imaginea in3.pgm :	-Total time: 1.728712
+					-E/D time: 0.791193
+
+
+
+Folosind 4 SPU:
+Imaginea in1.pgm :	Total time :0.453506
+					E/D time :0.139397
+
+Imaginea in2.pgm :	Total time :0.881267
+					E/D time :0.282018
+
+Imaginea in3.pgm :	Total time :1.370458
+					E/D time :0.432788
+
+
+
+Folosind 8 SPU:
+Imaginea in1.pgm :	Total time :0.389270
+					E/D time :0.080825
+
+Imaginea in2.pgm :	Total time :0.889139
+					E/D time :0.159049
+
+Imaginea in3.pgm :	Total time :1.189580
+					E/D time :0.214132
+
+
+Se oberva ca pe masura ce se folosesc mai multe SPU-uri timpii de executie scad.(Programul scaleaza) pornind de la 1.541288 
+si ajungand la 0.214132 pentru cea mai mare imagine.
+Programul creeaza fisierele de output corecte. Prin verificarea cu compare se primeste o diferenta de 0%.
+
+Probleme intampinate:
+-Cast de la short int [64] la vector signed short[8]. Se punea in fiecare vector din vector signed short[8] prima linie(primele 8 
+elemente din short int [64])
+-inmultirea intre vectori, necesitand extinderea de la signed short la float
+

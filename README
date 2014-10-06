@@ -1,0 +1,80 @@
+Mitris Victor
+334 CC
+Homework 3 ASC - Image Compression using Block Truncation Coding on Cell BroadBand Engine
+
+For compilation go in ppu folder and execute make, which creates tema3 executable.
+
+Used malloc_align to align the memory to 16.
+
+The PPU distrubutes the blocks to the SPU. Each SPU has image.height/( BLOC * num_spus) block lines, where a block line has 8 raws from the initial matrix and BLOC = 8.The last SPU  will have a different number of block lines if the raws do not divides at 64. The PPU waits for the threads to finnish, creates the images and shows the duration.
+
+SPU:
+
+-receives the structure from PPU through mfc_get
+-takes the block line using DMA Lists and sends the result back through DMA Lists
+-the decompresion is calculated at the same step in spu, the bitplan being already calculated
+
+Execution duration:
+
+Sequentially:
+Image in1.pgm
+	E/D: 1.215526 s
+	Total: 1.773706
+
+Image in2.pgm
+	E/D: 2.365488
+	Total: 3.281073
+
+Image in3.pgm
+	E/D: 3.22005
+	Total: 4.173148
+
+Parallel:
+Using 1 SPU:
+Image in1.pgm :	-Total time: 0.941898
+					-E/D time: 0.546276
+
+Image in2.pgm :	-Total time: 1.794664
+					-E/D time: 1.112178
+
+Image in3.pgm :	-Total time: 2.462137
+					-E/D time: 1.541288
+
+
+
+Using 2 SPU:
+Image in1.pgm :	-Total time: 0.649200
+					-E/D time: 0.273890
+
+Image in2.pgm :	-Total time: 1.147989
+					-E/D time: 0.551539
+
+Image in3.pgm :	-Total time: 1.728712
+					-E/D time: 0.791193
+
+
+
+Using 4 SPU:
+Image in1.pgm :	Total time :0.453506
+					E/D time :0.139397
+
+Image in2.pgm :	Total time :0.881267
+					E/D time :0.282018
+
+Image in3.pgm :	Total time :1.370458
+					E/D time :0.432788
+
+
+
+Using 8 SPU:
+Image in1.pgm :	Total time :0.389270
+					E/D time :0.080825
+
+Image in2.pgm :	Total time :0.889139
+					E/D time :0.159049
+
+Image in3.pgm :	Total time :1.189580
+					E/D time :0.214132
+
+The result is that the more SPU's are used the lower the duration(It scales).
+The difference between the images is 0%.
